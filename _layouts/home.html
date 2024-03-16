@@ -6,12 +6,12 @@ layout: base
     margin: 3em 8em;
 }
 .right {
-    float: left;
-    margin-right: 1.5em;
+    float: right;
+    margin-left: 1.5em;
 }
 .left {
-    float: right;
-    margin-left: 1em;
+    float: left;
+    margin-right: 1em;
 }
 p {
     margin-bottom: 2.5em;
@@ -29,7 +29,7 @@ p:last-child {
 
   {{ content }}
 <div id="wrap">
-  <img class="left" src=profile_pic.png, alt="Tempelhofer Feld, Berlin">
+  <img class="left" src=profile_pic.png>
   <p>Hello! Thank you for visiting my personal web page. I use this space to mainly document a lot of my recent work and tinkerings about with statistical models on chaotic interactions. You will find more about me and my personal hobbies on the top right, as well as information on my CV. Hope you stick around!</p>
 </div>
   {% if site.paginate %}
