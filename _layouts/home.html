@@ -3,18 +3,18 @@ layout: base
 ---
 <style>
   #wrap {
-    margin: 2em 6em;
+    margin: 9em 11em;
 }
 .left {
     float: left;
-    margin-right: 0.5em;
+    margin-right: 3em;
 }
 .right {
     float: right;
-    margin-left: 1em;
+    margin-left: 2em;
 }
 p {
-    margin-bottom: 2.5em;
+    margin-bottom: 3.75em;
     overflow: hidden; /* this is what keep the <p> from wrapping */
 }
 p:last-child {
@@ -29,7 +29,7 @@ p:last-child {
 
   {{ content }}
 <div id="wrap">
-  <img class="left" src=profile_pic.png>
+  <img class="left" src=profile_pic.png, heigth=5cm, alt="Tempelhofer Feld, Berlin">
   <p>Hello! Thank you for visiting my personal web page. I use this space to mainly document a lot of my recent work and tinkerings about with statistical models on chaotic interactions. You will find more about me and my personal hobbies on the top right, as well as information on my CV. Hope you stick around!</p>
 </div>
   {% if site.paginate %}
