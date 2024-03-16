@@ -1,6 +1,26 @@
 ---
 layout: base
 ---
+<style>
+  #wrap {
+    margin: 3em 8em;
+}
+.left {
+    float: left;
+    margin-right: 1.5em;
+}
+.right {
+    float: right;
+    margin-left: 1em;
+}
+p {
+    margin-bottom: 2.5em;
+    overflow: hidden; /* this is what keep the <p> from wrapping */
+}
+p:last-child {
+    overflow: visible; /* this is an example of the browser default */
+}
+</style>
 
 <div class="home">
   {%- if page.title -%}
@@ -8,8 +28,9 @@ layout: base
   {%- endif -%}
 
   {{ content }}
-
-
+<div id="wrap">
+  <img class="left" src=profile_pic.png>
+  <p>Hello! Thank you for visiting my personal web page. I use this space to mainly document a lot of my recent work and tinkerings about with statistical models on chaotic interactions. You will find more about me and my personal hobbies on the top right, as well as information on my CV. Hope you stick around!</p>
   {% if site.paginate %}
     {% assign posts = paginator.posts %}
   {% else %}
