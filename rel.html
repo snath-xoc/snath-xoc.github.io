@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rainfall Recalibration</title>
+<style>
+  :root {
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --bg-page: #f8fafc;
+    --bg-card: #ffffff;
+    --bg-slider: #f1f5f9;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --border-color: #e2e8f0;
+    --accent-blue: #0ea5e9;
+    --note-bg: #f0f9ff;
+    --note-text: #0369a1;
+    --note-border: #38bdf8;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --radius: 8px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-page: #0f172a;
+      --bg-card: #1e293b;
+      --bg-slider: #0f172a;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --border-color: #334155;
+      --note-bg: #0c4a6e;
+      --note-text: #e0f2fe;
+      --note-border: #0284c7;
+    }
+  }
+
+  body {
+    font-family: var(--font-family);
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    margin: 0;
+    padding: 2rem 1rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .pw {
+    max-width: 760px;
+    margin: 0 auto;
+    background: var(--bg-card);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+  }
+
+  .header-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .scale-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+  }
+
+  .scale-grad {
+    flex: 1;
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(to right, #E8D5A3, #D4B456, #8CC63F, #2E9E47, #0077B6, #023E8A, #1B0A3C);
+  }
+
+  .control-panel {
+    background: var(--bg-slider);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  .slide-ctrl {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .slide-ctrl label {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  /* Custom Range Slider */
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 280px;
+    background: transparent;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+    cursor: pointer;
+    margin-top: -8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    border: 2px solid white;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 6px;
+    cursor: pointer;
+    background: var(--border-color);
+    border-radius: 3px;
+  }
+  input[type=range]:focus { outline: none; }
+
+  .sv {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent-blue);
+    min-width: 130px;
+    text-align: left;
+    background: var(--bg-card);
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .legend span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ldot {
+    width: 14px;
+    height: 4px;
+    border-radius: 2px;
+  }
+
+  .models-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  /* Core Layout Rule ensuring vertical alignment */
+  .model-card {
+    display: grid;
+    grid-template-columns: 1fr 140px;
+    gap: 20px;
+    align-items: center;
+    padding: 1.25rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .truth-card {
+    background: var(--bg-slider);
+    border-left: 4px solid var(--text-secondary);
+  }
+
+  .row-label {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .row-sub {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+
+  .strip {
+    display: flex;
+    height: 36px;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .cell {
+    flex: 1;
+    transition: background 0.4s ease;
+  }
+
+  .placeholder-text {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-align: center;
+    font-style: italic;
+    opacity: 0.6;
+  }
+
+  .note {
+    margin-top: 2rem;
+    padding: 1.25rem 1.5rem;
+    font-size: 14.5px;
+    line-height: 1.6;
+    background: var(--note-bg);
+    color: var(--note-text);
+    border-left: 4px solid var(--note-border);
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+
+  .note strong {
+    color: inherit;
+    font-weight: 700;
+  }
+
+  @media (max-width: 600px) {
+    .model-card {
+      grid-template-columns: 1fr;
+    }
+    .model-card canvas, .placeholder-text {
+      max-width: 200px;
+      margin: 0 auto;
+    }
+    input[type=range] {
+      width: 100%;
+    }
+    .slide-ctrl {
+      flex-direction: column;
+      gap: 12px;
+    }
+    .sv { text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="pw">
+
+  <div class="header-group">
+    <div class="scale-bar">
+      <span>Dry</span>
+      <div class="scale-grad"></div>
+      <span>Heavy rain</span>
+    </div>
+  </div>
+
+  <div class="control-panel">
+    <div class="slide-ctrl">
+      <label>Recalibration (IDR):</label>
+      <input type="range" min="0" max="100" value="0" step="1" id="sR" oninput="render()">
+      <span class="sv" id="vR">Raw output</span>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><span class="ldot" style="background:rgba(128,128,128,0.3);"></span> Perfect reliability</span>
+    <span><span class="ldot" style="background:#888780;"></span> Climatology</span>
+    <span><span class="ldot" style="background:#E24B4A;"></span> No-skill line</span>
+    <span><span class="ldot" style="background:rgba(100,180,80,0.5);"></span> Resolution</span>
+  </div>
+
+  <div class="models-container">
+    
+    <div class="model-card truth-card">
+      <div class="strip-col">
+        <div class="row-label" style="color:var(--text-primary);">Reality (Ground Truth)</div>
+        <div class="row-sub">What actually happened across the time series</div>
+        <div class="strip" id="truthStrip"></div>
+      </div>
+    </div>
+
+    <div class="model-card">
+      <div class="strip-col">
+        <div class="row-label" style="color:#0F6E56;">Perfect Model</div>
+        <div class="strip" id="perfectStrip"></div>
+      </div>
+      <canvas id="adP" width="140" height="140" role="img" aria-label="Attribute diagram perfect model"></canvas>
+    </div>
+
+    <div class="model-card">
+      <div class="strip-col">
+        <div class="row-label" style="color:#BA7517;">No-Skill Model</div>
+        <div class="strip" id="noskillStrip"></div>
+      </div>
+      <canvas id="adN" width="140" height="140" role="img" aria-label="Attribute diagram no-skill model"></canvas>
+    </div>
+
+    <div class="model-card">
+      <div class="strip-col">
+        <div class="row-label" style="color:#D85A30;">No-Resolution Model</div>
+        <div class="strip" id="noresoStrip"></div>
+      </div>
+      <canvas id="adR" width="140" height="140" role="img" aria-label="Attribute diagram no-resolution model"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const N = 60;
+const dk = matchMedia('(prefers-color-scheme:dark)').matches;
+const cl = 0.3;
+
+function rainCol(v){
+  v = Math.max(0, Math.min(1, v));
+  const stops = [
+    [232,213,163], [212,180,86], [140,198,63], [46,158,71], [0,119,182], [2,62,138], [27,10,60]
+  ];
+  const t = v * (stops.length - 1);
+  const i = Math.floor(t);
+  const f = t - i;
+  const a = stops[Math.min(i, stops.length - 1)];
+  const b = stops[Math.min(i + 1, stops.length - 1)];
+  return `rgb(${Math.round(a[0]+(b[0]-a[0])*f)},${Math.round(a[1]+(b[1]-a[1])*f)},${Math.round(a[2]+(b[2]-a[2])*f)})`;
+}
+
+let truth = [];
+function genTruth(){
+  truth = []; let state = 0;
+  for(let i=0; i<N; i++){
+    if(state === 0){
+      if(Math.random() < 0.22) state = 1;
+      truth.push(Math.random() * 0.08);
+    } else {
+      truth.push(0.3 + Math.random() * 0.7);
+      if(Math.random() < 0.35) state = 0;
+    }
+  }
+}
+genTruth();
+
+let fc = { perfect: [], noskill: [], noreso: [] };
+function genFc(){
+  fc = { perfect: [], noskill: [], noreso: [] };
+  truth.forEach(v => {
+    fc.perfect.push(Math.max(0, Math.min(1, v + 0.12 * (Math.random() - 0.5) + Math.random() * 0.3)));
+    fc.noskill.push(Math.max(0, Math.min(1, 0.25 * (v - Math.random() * 0.5) - 0.3 * (Math.random() - 0.9))));
+    fc.noreso.push(0.32 + Math.random() * 0.5);
+  });
+}
+genFc();
+
+const meanTruth = () => truth.reduce((a, b) => a + b, 0) / truth.length;
+const blur = 14;
+function blurred(){
+  return truth.map((v, i) => {
+    let s = 0, c = 0;
+    for(let j = Math.max(0, i - blur); j <= Math.min(N - 1, i + blur); j++){ s += truth[j]; c++; }
+    return s / c;
+  });
+}
+
+function buildStrip(id, vals){
+  document.getElementById(id).innerHTML = vals.map(v => `<div class="cell" style="background:${rainCol(v)};"></div>`).join('');
+}
+
+// Attribute diagram drawing
+const COL = {
+  grid: dk ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)',
+  ax: dk ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
+  txt: dk ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)',
+  diag: dk ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+  clim: '#888780',
+  ns: dk ? 'rgba(226,75,74,0.6)' : 'rgba(226,75,74,0.6)',
+  reso: dk ? 'rgba(100,180,80,0.25)' : 'rgba(100,180,80,0.22)',
+};
+const modelStyles = {
+  perfect: { line: dk ? '#5DCAA5' : '#0F6E56', dot: dk ? '#5DCAA5' : '#1D9E75' },
+  noskill: { line: dk ? '#FAC775' : '#BA7517', dot: dk ? '#FAC775' : '#BA7517' },
+  noreso:  { line: dk ? '#F0997B' : '#D85A30', dot: dk ? '#F0997B' : '#D85A30' },
+};
+
+const adBins = {
+  perfect: [
+    {fi:.05,oi:.02},{fi:.15,oi:.21},{fi:.25,oi:.22},{fi:.35,oi:.50},
+    {fi:.45,oi:.59},{fi:.55,oi:.65},{fi:.65,oi:.67},{fi:.75,oi:.88},
+    {fi:.85,oi:.98},{fi:.95,oi:.99}
+  ],
+  noskill: [
+    {fi:.05,oi:.16},{fi:.15,oi:.22},{fi:.25,oi:.23},{fi:.35,oi:.23},
+    {fi:.45,oi:.27},{fi:.55,oi:.32},{fi:.65,oi:.57},{fi:.75,oi:.62},
+    {fi:.85,oi:.75},{fi:.95,oi:.77}
+  ],
+  noreso: [
+    {fi:.05,oi:.18},{fi:.15,oi:.19},{fi:.25,oi:.23},{fi:.35,oi:.23},
+    {fi:.45,oi:.29},{fi:.55,oi:.29},{fi:.65,oi:.29},{fi:.75,oi:.35},
+    {fi:.85,oi:.37},{fi:.95,oi:.39}
+  ]
+};
+
+const adTargets = {
+  perfect: b => b.fi,
+  noskill: b => (b.fi + cl) / 2,
+  noreso: b => cl
+};
+
+function drawAD(canvasId, model, t){
+  const cv = document.getElementById(canvasId);
+  const cx = cv.getContext('2d');
+  const w = cv.width, h = cv.height;
+  const m = { l: 20, r: 8, t: 8, b: 20 };
+  const pw = w - m.l - m.r, ph = h - m.t - m.b;
+  function px(v){ return m.l + v * pw; }
+  function py(v){ return m.t + (1 - v) * ph; }
+  cx.clearRect(0, 0, w, h);
+
+  const bins = adBins[model].map(b => ({
+    fi: b.fi,
+    oi: b.oi * (1 - t) + adTargets[model](b) * t
+  }));
+
+  // Grid
+  cx.strokeStyle = COL.grid; cx.lineWidth = 1;
+  for(let i=0; i<=4; i++){
+    const v = i / 4;
+    cx.beginPath(); cx.moveTo(px(0), py(v)); cx.lineTo(px(1), py(v)); cx.stroke();
+    cx.beginPath(); cx.moveTo(px(v), py(0)); cx.lineTo(px(v), py(1)); cx.stroke();
+  }
+
+  // No-skill
+  cx.strokeStyle = COL.ns; cx.lineWidth = 1.5; cx.setLineDash([4,4]);
+  cx.beginPath(); cx.moveTo(px(0), py(cl/2)); cx.lineTo(px(1), py((1+cl)/2)); cx.stroke(); cx.setLineDash([]);
+
+  // Diagonal
+  cx.strokeStyle = COL.diag; cx.lineWidth = 1.5; cx.setLineDash([4,4]);
+  cx.beginPath(); cx.moveTo(px(0), py(0)); cx.lineTo(px(1), py(1)); cx.stroke(); cx.setLineDash([]);
+
+  // Climatology
+  cx.strokeStyle = COL.clim; cx.lineWidth = 1.5; cx.setLineDash([2,2]);
+  cx.beginPath(); cx.moveTo(px(0), py(cl)); cx.lineTo(px(1), py(cl)); cx.stroke(); cx.setLineDash([]);
+
+  // Resolution shading
+  cx.fillStyle = COL.reso;
+  cx.beginPath(); cx.moveTo(px(bins[0].fi), py(cl));
+  bins.forEach(b => cx.lineTo(px(b.fi), py(b.oi)));
+  cx.lineTo(px(bins[bins.length-1].fi), py(cl)); cx.closePath(); cx.fill();
+
+  // Curve
+  const st = modelStyles[model];
+  cx.strokeStyle = st.line; cx.lineWidth = 2.5;
+  cx.beginPath();
+  bins.forEach((b, i) => { if(i===0) cx.moveTo(px(b.fi), py(b.oi)); else cx.lineTo(px(b.fi), py(b.oi)); });
+  cx.stroke();
+
+  // Dots
+  bins.forEach(b => {
+    cx.fillStyle = st.dot; cx.beginPath(); cx.arc(px(b.fi), py(b.oi), 3, 0, Math.PI*2); cx.fill();
+  });
+
+  // Axes
+  cx.strokeStyle = COL.ax; cx.lineWidth = 1;
+  cx.beginPath(); cx.moveTo(px(0), py(0)); cx.lineTo(px(0), py(1)); cx.stroke();
+  cx.beginPath(); cx.moveTo(px(0), py(0)); cx.lineTo(px(1), py(0)); cx.stroke();
+
+  cx.fillStyle = COL.txt; cx.font = '10px system-ui, sans-serif';
+  cx.textAlign = 'center';
+  [0,1].forEach(v => cx.fillText(v.toFixed(0), px(v), py(0) + 14));
+  cx.textAlign = 'right';
+  [0,1].forEach(v => cx.fillText(v.toFixed(0), px(0) - 6, py(v) + 3));
+}
+
+function render(){
+  const t = parseInt(document.getElementById('sR').value) / 100;
+  const label = document.getElementById('vR');
+  
+  if(t < 0.02) label.textContent = 'Raw output';
+  else if(t > 0.98) label.textContent = 'Fully recalibrated';
+  else label.textContent = Math.round(t * 100) + '% recalibrated';
+
+  buildStrip('truthStrip', truth);
+
+  const pV = truth.map((tr, i) => fc.perfect[i] * (1 - t) + tr * t);
+  buildStrip('perfectStrip', pV);
+
+  const mt = meanTruth();
+  const nrV = truth.map((tr, i) => fc.noreso[i] * (1 - t) + mt * t);
+  buildStrip('noresoStrip', nrV);
+
+  const bl = blurred();
+  const nsV = truth.map((tr, i) => fc.noskill[i] * (1 - t) + bl[i] * t);
+  buildStrip('noskillStrip', nsV);
+
+  drawAD('adP', 'perfect', t);
+  drawAD('adN', 'noskill', t);
+  drawAD('adR', 'noreso', t);
+}
+
+render();
+</script>
+</body>
+</html>
